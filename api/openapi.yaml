@@ -1,0 +1,291 @@
+openapi: 3.0.0
+info:
+  title: AutoSport Hub API
+  version: 1.0.0
+  description: Розширена специфікація REST API для автоспортивного форуму. Містить 3 ресурси, 11 ендпоінтів та 4 базові схеми даних.
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Основний сервер
+
+paths:
+  # ==========================================
+  # РЕСУРС 1: КОРИСТУВАЧІ (/users) - 3 ендпоінти
+  # ==========================================
+  /users:
+    post:
+      summary: Реєстрація нового користувача
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: Користувач успішно зареєстрований
+        '400':
+          description: Помилка валідації
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{id}:
+    get:
+      summary: Отримати профіль користувача
+      tags: [Users]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Дані профілю
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: Користувача не знайдено
+
+  /users/{id}/role:
+    patch:
+      summary: Змінити роль користувача (Адмін)
+      tags: [Users]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  example: "editor"
+      responses:
+        '200':
+          description: Роль успішно оновлено
+
+  # ==========================================
+  # РЕСУРС 2: СТАТТІ (/articles) - 5 ендпоінтів
+  # ==========================================
+  /articles:
+    get:
+      summary: Отримати список статей (Стрічка новин)
+      tags: [Articles]
+      parameters:
+        - in: query
+          name: category_id
+          schema:
+            type: integer
+          description: Фільтр за категорією
+      responses:
+        '200':
+          description: Масив статей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Article'
+
+    post:
+      summary: Створити нову статтю
+      tags: [Articles]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Article'
+      responses:
+        '201':
+          description: Статтю створено (статус pending)
+
+  /articles/{id}:
+    get:
+      summary: Переглянути конкретну статтю
+      tags: [Articles]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Деталі статті
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Article'
+
+    delete:
+      summary: Видалити статтю (Автор або Редактор)
+      tags: [Articles]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Успішно видалено
+
+  /articles/{id}/status:
+    patch:
+      summary: Модерація статті (Редактор)
+      tags: [Articles]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [approved, rejected]
+      responses:
+        '200':
+          description: Статус оновлено
+
+  # ==========================================
+  # РЕСУРС 3: КОМЕНТАРІ (/comments) - 3 ендпоінти
+  # ==========================================
+  /comments:
+    get:
+      summary: Отримати коментарі до статті
+      tags: [Comments]
+      parameters:
+        - in: query
+          name: article_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список коментарів
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+
+    post:
+      summary: Додати новий коментар
+      tags: [Comments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Comment'
+      responses:
+        '201':
+          description: Коментар додано
+
+  /comments/{id}:
+    delete:
+      summary: Видалити спам-коментар (Редактор)
+      tags: [Comments]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Коментар видалено
+
+components:
+  schemas:
+    # Схема 1: Користувач
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 101
+        username:
+          type: string
+          example: "MaxVerstappenFan"
+        email:
+          type: string
+          example: "max@autosport.com"
+        role:
+          type: string
+          example: "user"
+
+    # Схема 2: Стаття
+    Article:
+      type: object
+      required:
+        - title
+        - content
+        - category_id
+      properties:
+        id:
+          type: integer
+          example: 42
+        title:
+          type: string
+          example: "Огляд Гран-прі Монако 2026"
+        content:
+          type: string
+          example: "Текст аналітики..."
+        category_id:
+          type: integer
+          example: 1
+        status:
+          type: string
+          example: "pending"
+
+    # Схема 3: Коментар
+    Comment:
+      type: object
+      required:
+        - article_id
+        - text
+      properties:
+        id:
+          type: integer
+          example: 88
+        article_id:
+          type: integer
+          example: 42
+        user_id:
+          type: integer
+          example: 101
+        text:
+          type: string
+          example: "Чудова стаття, повністю згоден!"
+
+    # Схема 4: Помилка (Error Response)
+    ErrorResponse:
+      type: object
+      properties:
+        error_code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: "Невірний формат email або порожнє поле тексту."
