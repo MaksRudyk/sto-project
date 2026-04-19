@@ -1,1 +1,1 @@
-"# sto-project" 
+# sto-project
